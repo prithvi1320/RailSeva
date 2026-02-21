@@ -1,0 +1,14 @@
+{
+  "placeholderImages": [
+    {
+      "id": "user-avatar",
+      "description": "Default user avatar",
+      "imageUrl": "https://picsum.photos/seed/animeboy/200/200"
+    },
+    {
+      "id": "landing-hero",
+      "description": "India gate with the Indian flag",
+      "imageUrl": "https://images.unsplash.com/photo-1617454054486-faf1a63456a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxJbmRpYSUyMGZsYWd8ZW58MHx8fHwxNzIyMzgxNjM3fDA&ixlib=rb-4.0.3&q=80&w=1080"
+    }
+  ]
+}
