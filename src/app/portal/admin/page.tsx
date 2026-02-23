@@ -65,14 +65,14 @@ export default function AdminPage() {
 
   return (
     <div className="w-full mx-auto">
-      <h1 className="text-3xl font-headline font-bold mb-2">Admin Dashboard</h1>
-      <p className="text-muted-foreground mb-8">
+      <h1 className="mb-2 font-headline text-6xl font-semibold uppercase text-foreground">Admin Dashboard</h1>
+      <p className="mb-8 text-2xl text-muted-foreground">
         View, manage, and resolve passenger complaints.
       </p>
 
-      <Card>
+      <Card className="rounded-2xl border bg-white shadow-sm">
         <CardHeader>
-          <CardTitle>All Complaints</CardTitle>
+          <CardTitle className="font-headline text-4xl uppercase">All Complaints</CardTitle>
           <div className="flex flex-col md:flex-row gap-4 pt-4">
             <Select onValueChange={handleFilterChange("status")} value={filters.status}>
               <SelectTrigger>

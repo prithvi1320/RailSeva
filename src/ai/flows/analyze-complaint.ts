@@ -46,7 +46,12 @@ function getPriorityFromKeywords(text: string): number | null {
 export async function analyzeComplaint(
   input: AnalyzeComplaintInput
 ): Promise<AnalyzeComplaintOutput> {
-  return analyzeComplaintFlow(input);
+  try {
+    return await analyzeComplaintFlow(input);
+  } catch (error) {
+    console.error("analyzeComplaint failed:", error);
+    return fallbackAnalysis(input.complaintDescription);
+  }
 }
 
 const analyzeComplaintPrompt = ai.definePrompt({
@@ -74,12 +79,25 @@ const analyzeComplaintFlow = ai.defineFlow(
   async input => {
     const { output } = await analyzeComplaintPrompt(input);
     const keywordPriority = getPriorityFromKeywords(input.complaintDescription);
-    
-    const finalPriority = keywordPriority ?? output!.priority;
-    
+
+    if (!output) {
+      return fallbackAnalysis(input.complaintDescription);
+    }
+
+    const finalPriority = keywordPriority ?? output.priority;
+
     return {
-        ...output!,
-        priority: finalPriority,
+      ...output,
+      priority: finalPriority,
     };
   }
 );
+
+function fallbackAnalysis(text: string): AnalyzeComplaintOutput {
+  const keywordPriority = getPriorityFromKeywords(text);
+  return {
+    category: "Other",
+    priority: keywordPriority ?? 3,
+    reason: "Automatic assist is temporarily unavailable. Category set to Other by fallback mode.",
+  };
+}

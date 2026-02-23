@@ -24,7 +24,14 @@ export type VoiceToTextComplaintOutput = z.infer<
 export async function voiceToTextComplaintDescription(
   input: VoiceToTextComplaintInput
 ): Promise<VoiceToTextComplaintOutput> {
-  return voiceToTextComplaintDescriptionFlow(input);
+  try {
+    return await voiceToTextComplaintDescriptionFlow(input);
+  } catch (error) {
+    console.error("voiceToTextComplaintDescription failed:", error);
+    return {
+      transcribedText: "",
+    };
+  }
 }
 
 const transcribePrompt = ai.definePrompt({
@@ -44,6 +51,6 @@ const voiceToTextComplaintDescriptionFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await transcribePrompt(input);
-    return output!;
+    return output ?? { transcribedText: "" };
   }
 );

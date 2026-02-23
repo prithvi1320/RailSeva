@@ -1,8 +1,21 @@
 "use client";
 
+import React, { useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Copy, Image as ImageIcon, Loader2, Mic, Square, Video, AudioLines } from "lucide-react";
+import { analyzeComplaint, type AnalyzeComplaintOutput } from "@/ai/flows/analyze-complaint";
+import { voiceToTextComplaintDescription } from "@/ai/flows/voice-to-text-complaint";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useToast } from "@/hooks/use-toast";
+import { complaintCategories } from "@/lib/definitions";
+import type { Complaint } from "@/lib/definitions";
+import { useComplaints } from "@/context/complaints-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -19,81 +32,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Mic, Square, Loader2, Copy } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import {
-  complaintCategories,
-  journeyDetailsOptions,
-} from "@/lib/definitions";
-import type { Complaint } from "@/lib/definitions";
-import React, { useState, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useDebounce } from "@/hooks/use-debounce";
-import { analyzeComplaint, type AnalyzeComplaintOutput } from "@/ai/flows/analyze-complaint";
-import { voiceToTextComplaintDescription } from "@/ai/flows/voice-to-text-complaint";
-import { useComplaints } from "@/context/complaints-context";
 
 const formSchema = z.object({
-  mobileNumber: z.string().regex(/^\d{10}$/, "Please enter a valid 10-digit mobile number."),
-  journeyDetailType: z.enum(journeyDetailsOptions, {
-    required_error: "Please select a journey detail type.",
-  }),
-  journeyDetailValue: z
-    .string()
-    .min(1, "This field is required."),
-  description: z
-    .string()
-    .min(20, "Please provide a detailed description (min. 20 characters)."),
-  incidentDate: z.date({ required_error: "Please select a date." }),
+  trainNumber: z.string().regex(/^\d{5}$/, "Please enter a valid 5-digit train number."),
   category: z.enum(complaintCategories, {
     required_error: "Please select a category.",
   }),
-  file: z.any().optional(),
+  description: z
+    .string()
+    .min(20, "Please provide a detailed description (minimum 20 characters)."),
+  imageEvidence: z.any().optional(),
+  audioEvidence: z.any().optional(),
+  videoEvidence: z.any().optional(),
 });
 
 type RecordingState = "idle" | "recording" | "transcribing";
 
 const PriorityBadge = ({ priority }: { priority: number }) => {
-    const config: { label: string; variant: "destructive" | "default" | "secondary" | "outline" } =
-      {
-        5: { label: 'Critical', variant: 'destructive' },
-        4: { label: 'High', variant: 'default' },
-        3: { label: 'Medium', variant: 'secondary' },
-        2: { label: 'Low', variant: 'outline' },
-        1: { label: 'Feedback', variant: 'outline' },
-      }[priority] || { label: 'Unknown', variant: 'outline' };
+  const config: { label: string; variant: "destructive" | "default" | "secondary" | "outline" } =
+    {
+      5: { label: "Critical", variant: "destructive" },
+      4: { label: "High", variant: "default" },
+      3: { label: "Medium", variant: "secondary" },
+      2: { label: "Low", variant: "outline" },
+      1: { label: "Feedback", variant: "outline" },
+    }[priority] || { label: "Unknown", variant: "outline" };
 
-    return <Badge variant={config.variant}>Priority: {config.label}</Badge>;
+  return <Badge variant={config.variant}>Priority: {config.label}</Badge>;
 };
-
 
 export function ComplaintForm() {
   const { toast } = useToast();
+  const { addComplaint } = useComplaints();
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
+  const [smartAssist, setSmartAssist] = useState<AnalyzeComplaintOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const { addComplaint } = useComplaints();
-  const [aiAnalysis, setAiAnalysis] = useState<AnalyzeComplaintOutput | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      journeyDetailType: "PNR",
-      journeyDetailValue: "",
+      trainNumber: "",
       description: "",
-      mobileNumber: "",
     },
   });
 
@@ -106,26 +87,20 @@ export function ComplaintForm() {
       analyzeComplaint({ complaintDescription: debouncedDescription })
         .then((result) => {
           if (result) {
-            setAiAnalysis(result);
+            setSmartAssist(result);
             const validCategories: string[] = [...complaintCategories];
             if (validCategories.includes(result.category)) {
-                form.setValue("category", result.category, {
-                  shouldValidate: true,
-                });
-                toast({
-                  title: "AI Analysis Complete",
-                  description: `We've suggested a category and priority for your issue.`,
-                });
+              form.setValue("category", result.category, { shouldValidate: true });
             }
           }
         })
         .catch((error) => {
-            console.error("AI analysis failed:", error)
-            toast({
-                variant: "destructive",
-                title: "AI Analysis Failed",
-                description: "Could not analyze the complaint description.",
-            });
+          console.error("Assist analysis failed:", error);
+          toast({
+            variant: "destructive",
+            title: "Assist Unavailable",
+            description: "Could not analyze the complaint description.",
+          });
         })
         .finally(() => {
           setIsAnalyzing(false);
@@ -158,7 +133,11 @@ export function ComplaintForm() {
             form.setValue("description", result.transcribedText, { shouldValidate: true });
           } catch (error) {
             console.error("Transcription failed:", error);
-            toast({ variant: "destructive", title: "Transcription Failed", description: "Could not transcribe audio." });
+            toast({
+              variant: "destructive",
+              title: "Transcription Failed",
+              description: "Could not transcribe audio.",
+            });
           } finally {
             setRecordingState("idle");
           }
@@ -169,7 +148,11 @@ export function ComplaintForm() {
       setRecordingState("recording");
     } catch (error) {
       console.error("Could not start recording:", error);
-      toast({ variant: "destructive", title: "Recording Error", description: "Could not access microphone." });
+      toast({
+        variant: "destructive",
+        title: "Recording Error",
+        description: "Could not access microphone.",
+      });
     }
   };
 
@@ -179,29 +162,37 @@ export function ComplaintForm() {
     }
   };
 
-  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ variant: "destructive", title: "File too large", description: "Please upload a file smaller than 5MB." });
-        form.setValue("file", undefined);
+  const onFileChange =
+    (name: "imageEvidence" | "audioEvidence" | "videoEvidence") =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please upload a file smaller than 10MB.",
+        });
+        form.setValue(name, undefined);
         if (event.target) event.target.value = "";
-      } else {
-        form.setValue("file", file);
+        return;
       }
-    }
-  };
-  
+
+      form.setValue(name, file, { shouldValidate: true });
+    };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const complaintId = `RAIL${Date.now()}`;
     const newComplaint: Complaint = {
       id: complaintId,
       category: values.category,
-      date: values.incidentDate.toISOString(),
+      date: new Date().toISOString(),
       status: "Submitted",
       description: values.description,
+      trainNo: values.trainNumber,
       submittedBy: "Current User",
       history: [
         {
@@ -210,25 +201,18 @@ export function ComplaintForm() {
           remarks: "Complaint submitted successfully.",
         },
       ],
-      aiSuggestedCategory: aiAnalysis?.category,
-      aiPriority: aiAnalysis?.priority,
-      aiReason: aiAnalysis?.reason,
+      aiSuggestedCategory: smartAssist?.category,
+      aiPriority: smartAssist?.priority,
+      aiReason: smartAssist?.reason,
     };
-
-    if (values.journeyDetailType === "PNR") newComplaint.pnr = values.journeyDetailValue;
-    if (values.journeyDetailType === "Ticket No") newComplaint.ticketNo = values.journeyDetailValue;
-    if (values.journeyDetailType === "Train No") newComplaint.trainNo = values.journeyDetailValue;
-    if (values.journeyDetailType === "Station Name") newComplaint.stationName = values.journeyDetailValue;
 
     addComplaint(newComplaint);
 
     toast({
-      title: "Success! Complaint Registered.",
+      title: "Complaint Submitted Successfully",
       description: (
         <div className="grid gap-2 pt-2">
-          <span>
-            You can track your complaint using the ID below.
-          </span>
+          <span>You can track your complaint using the ID below.</span>
           <div className="flex items-center justify-between gap-2 rounded-md bg-muted p-2">
             <code className="font-mono font-semibold">{complaintId}</code>
             <Button
@@ -238,7 +222,7 @@ export function ComplaintForm() {
               onClick={() => {
                 navigator.clipboard.writeText(complaintId);
                 toast({
-                  description: "Complaint ID copied to clipboard!",
+                  description: "Complaint ID copied to clipboard.",
                 });
               }}
             >
@@ -250,187 +234,43 @@ export function ComplaintForm() {
       ),
       duration: 15000,
     });
+
     form.reset();
-    setAiAnalysis(null);
+    setSmartAssist(null);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField
-              control={form.control}
-              name="mobileNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mobile Number</FormLabel>
-                   <FormControl>
-                    <div className="flex items-center">
-                      <span className="h-10 flex items-center justify-center rounded-l-md border border-r-0 bg-muted px-3 text-sm">+91</span>
-                      <Input 
-                        placeholder="00000 00000" 
-                        {...field} 
-                        className="rounded-l-none"
-                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="incidentDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Incident Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <FormField
-            control={form.control}
-            name="journeyDetailType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Journey Details</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a detail type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {journeyDetailsOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="journeyDetailValue"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{form.watch("journeyDetailType") || "Detail"}</FormLabel>
-                <FormControl>
-                  <Input placeholder={`Enter ${form.watch("journeyDetailType")}`} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
         <FormField
           control={form.control}
-          name="description"
+          name="trainNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Grievance / Assistance Description</FormLabel>
+              <FormLabel className="text-4xl font-semibold text-foreground">Train Number *</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Textarea
-                    placeholder="Describe your issue in detail..."
-                    className="min-h-[150px] pr-12"
-                    {...field}
-                  />
-                  <div className="absolute top-2 right-2">
-                    {recordingState === "idle" && (
-                      <Button type="button" size="icon" variant="ghost" onClick={handleStartRecording}>
-                        <Mic className="h-5 w-5" />
-                      </Button>
-                    )}
-                    {recordingState === "recording" && (
-                      <Button type="button" size="icon" variant="destructive" onClick={handleStopRecording}>
-                        <Square className="h-5 w-5" />
-                      </Button>
-                    )}
-                    {recordingState === "transcribing" && (
-                       <Button type="button" size="icon" variant="ghost" disabled>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <Input
+                  placeholder="e.g., 12345"
+                  className="h-14 text-xl"
+                  maxLength={5}
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        {(isAnalyzing || aiAnalysis) && (
-            <div className="space-y-2 rounded-md border bg-muted/50 p-4">
-                <FormLabel>AI Analysis</FormLabel>
-                {isAnalyzing ? (
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Analyzing your complaint...</span>
-                    </div>
-                ): aiAnalysis && (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
-                        <PriorityBadge priority={aiAnalysis.priority} />
-                        <p className="text-sm text-muted-foreground italic">"{aiAnalysis.reason}"</p>
-                    </div>
-                )}
-            </div>
-        )}
 
         <FormField
           control={form.control}
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Complaint Category</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-              >
+              <FormLabel className="text-4xl font-semibold text-foreground">Complaint Category *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-14 text-xl">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
@@ -442,35 +282,154 @@ export function ComplaintForm() {
                   ))}
                 </SelectContent>
               </Select>
-               <FormDescription>A category may be suggested based on your description.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <FormField
-            control={form.control}
-            name="file"
-            render={({ field }) => {
-              const { value, ...rest } = field;
-              return (
-                <FormItem>
-                  <FormLabel>Upload File (Optional)</FormLabel>
-                  <FormControl>
-                    <Input type="file" {...rest} onChange={onFileChange} accept="application/pdf,image/jpeg,image/png,image/jpg,video/mp4"/>
-                  </FormControl>
-                  <FormDescription>
-                    Attach a relevant file (PDF, JPG, PNG, MP4). Max size: 5MB.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
 
-        <Button type="submit" className="w-full md:w-auto" disabled={form.formState.isSubmitting}>
-           {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit Complaint"}
-        </Button>
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-4xl font-semibold text-foreground">Complaint Description *</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Textarea
+                    placeholder="Describe your complaint in detail..."
+                    className="min-h-[180px] pr-14 pt-4 text-xl"
+                    {...field}
+                  />
+                  <div className="absolute right-3 top-3">
+                    {recordingState === "idle" && (
+                      <Button type="button" size="icon" variant="ghost" onClick={handleStartRecording}>
+                        <Mic className="h-5 w-5" />
+                      </Button>
+                    )}
+                    {recordingState === "recording" && (
+                      <Button type="button" size="icon" variant="destructive" onClick={handleStopRecording}>
+                        <Square className="h-5 w-5" />
+                      </Button>
+                    )}
+                    {recordingState === "transcribing" && (
+                      <Button type="button" size="icon" variant="ghost" disabled>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {(isAnalyzing || smartAssist) && (
+          <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
+            <FormLabel className="text-lg font-semibold">Smart Assist</FormLabel>
+            {isAnalyzing ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Analyzing your complaint...</span>
+              </div>
+            ) : (
+              smartAssist && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <PriorityBadge priority={smartAssist.priority} />
+                  <p className="text-sm italic text-muted-foreground">"{smartAssist.reason}"</p>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        <div className="space-y-4 border-t pt-6">
+          <h3 className="font-headline text-4xl font-semibold uppercase text-foreground">Attach Evidence (Optional)</h3>
+          <div className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="imageEvidence"
+              render={({ field }) => {
+                const { value, ...rest } = field;
+                return (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2 text-xl">
+                      <ImageIcon className="h-4 w-4" />
+                      Image
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="image/jpeg,image/png,image/jpg" {...rest} onChange={onFileChange("imageEvidence")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+            <FormField
+              control={form.control}
+              name="audioEvidence"
+              render={({ field }) => {
+                const { value, ...rest } = field;
+                return (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2 text-xl">
+                      <AudioLines className="h-4 w-4" />
+                      Audio
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="audio/*" {...rest} onChange={onFileChange("audioEvidence")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+            <FormField
+              control={form.control}
+              name="videoEvidence"
+              render={({ field }) => {
+                const { value, ...rest } = field;
+                return (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2 text-xl">
+                      <Video className="h-4 w-4" />
+                      Video
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="video/mp4,video/*" {...rest} onChange={onFileChange("videoEvidence")} />
+                    </FormControl>
+                    <FormDescription>Max upload size per file: 10MB</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-14 text-3xl font-headline uppercase tracking-wide"
+            onClick={() => {
+              form.reset();
+              setSmartAssist(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" className="h-14 text-3xl font-headline uppercase tracking-wide" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Submit Complaint"
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );

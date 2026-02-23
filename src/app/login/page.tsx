@@ -7,134 +7,93 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowRightToLine, Loader2, Mail, Lock } from 'lucide-react';
+import { RailMadadHeader } from '@/components/layout/rail-madad-header';
 
 export default function LoginPage() {
-  const [step, setStep] = useState<'enter-mobile' | 'enter-otp'>('enter-mobile');
-  const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleGetOtp = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mobile.length !== 10) {
-      alert("Please enter a valid 10-digit mobile number.");
+    if (!email || !password) {
+      alert("Please enter email and password.");
       return;
     }
+
     setIsLoading(true);
-    console.log(`Sending OTP to ${mobile}`);
+    const isAdmin = email.toLowerCase() === 'admin@railmadad.com' && password === 'admin123';
+
     setTimeout(() => {
       setIsLoading(false);
-      setStep('enter-otp');
+      router.push(isAdmin ? '/portal/admin' : '/portal');
     }, 1000);
   };
-
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length !== 6) {
-      alert("Please enter a valid 6-digit OTP.");
-      return;
-    }
-    setIsLoading(true);
-    console.log(`Verifying OTP ${otp}`);
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push('/portal');
-    }, 1000);
-  };
-
-  const AppLogo = () => (
-    <div className="flex items-center gap-2">
-        <div className="bg-accent p-1.5 rounded-md leading-none">
-            <span className="font-bold text-accent-foreground text-lg">RS</span>
-        </div>
-        <h1 className="font-headline text-2xl font-bold text-primary">
-            RAILSEVA
-        </h1>
-    </div>
-  );
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="absolute top-4 left-4">
-        <Button variant="ghost" asChild>
-          <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
-        </Button>
-      </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className='mx-auto mb-4'>
-            <AppLogo/>
-          </div>
-          <CardTitle className="text-2xl font-headline">
-            {step === 'enter-mobile' ? 'Login or Register' : 'Verify OTP'}
-          </CardTitle>
-          <CardDescription>
-            {step === 'enter-mobile'
-              ? 'Enter your mobile number to continue.'
-              : `An OTP has been sent to ${mobile}.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === 'enter-mobile' ? (
-            <form onSubmit={handleGetOtp} className="space-y-4">
+    <div className="min-h-screen bg-background">
+      <RailMadadHeader />
+      <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1280px] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-2xl rounded-2xl border bg-white shadow-sm">
+          <CardHeader className="space-y-5 pt-10 text-center">
+            <div className="mx-auto inline-flex rounded-xl bg-accent p-5 text-white">
+              <ArrowRightToLine className="h-10 w-10" />
+            </div>
+            <CardTitle className="font-headline text-6xl font-semibold uppercase text-foreground">Welcome Back</CardTitle>
+            <CardDescription className="text-2xl text-muted-foreground">Login to Rail Madad Complaint System</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile Number</Label>
-                <div className="flex items-center">
-                  <span className="h-10 flex items-center justify-center rounded-l-md border border-r-0 bg-muted px-3 text-sm">+91</span>
+                <Label htmlFor="email" className="text-3xl font-semibold text-foreground">Email</Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    id="mobile"
-                    type="tel"
-                    placeholder="00000 00000"
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-14 pl-12 text-xl"
                     required
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="rounded-l-none"
-                    pattern="\d{10}"
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Get OTP'}
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="otp">One-Time Password (OTP)</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Enter 6-digit OTP"
-                  required
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  pattern="\d{6}"
-                />
+                <Label htmlFor="password" className="text-3xl font-semibold text-foreground">Password</Label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-14 pl-12 text-xl"
+                    required
+                  />
+                </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify OTP'}
+              <Button type="submit" className="h-14 w-full font-headline text-3xl uppercase tracking-wide" disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Login'}
               </Button>
             </form>
-          )}
-        </CardContent>
-        {step === 'enter-otp' && (
-          <CardFooter className="flex flex-col items-center justify-center text-sm">
-            <p className="text-muted-foreground">Didn't receive the code?</p>
-            <div className='flex gap-1'>
-                <Button variant="link" size="sm" onClick={() => setStep('enter-mobile')}>
-                    Change number
-                </Button>
-                <span className='text-muted-foreground'>or</span>
-                <Button variant="link" size="sm" onClick={() => alert("Resending OTP...")}>
-                    Resend OTP
-                </Button>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4 pb-8 pt-2">
+            <p className="text-xl text-muted-foreground">
+              Don&apos;t have an account?{' '}
+              <Link href="/login" className="font-semibold text-accent hover:underline">
+                Register here
+              </Link>
+            </p>
+            <div className="w-full rounded-lg border bg-muted px-4 py-3 text-center text-lg text-muted-foreground">
+              Admin Login: admin@railmadad.com / admin123
             </div>
           </CardFooter>
-        )}
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

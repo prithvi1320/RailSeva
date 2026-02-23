@@ -53,7 +53,7 @@ export function ComplaintTimeline({ complaint }: { complaint: Complaint }) {
           </div>
            {complaint.aiPriority !== undefined && complaint.aiReason && (
             <div className="space-y-2">
-                <h3 className="font-semibold">AI Analysis</h3>
+                <h3 className="font-semibold">Smart Assist</h3>
                 <div className="flex items-center gap-4">
                     <PriorityBadge priority={complaint.aiPriority} />
                 </div>

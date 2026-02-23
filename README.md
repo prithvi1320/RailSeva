@@ -21,13 +21,13 @@ You need to have Node.js (version 18 or later) and npm installed on your system.
     ```
 
 3.  **Set up Environment Variables:**
-    The project uses Genkit to interact with the Google Gemini API for its AI features. You'll need to provide an API key.
+    The project uses Gemini-powered assist features (via Genkit). You'll need to provide an API key.
 
     Create a new file named `.env` in the root of your project and add the following line:
     ```
     GEMINI_API_KEY=YOUR_GEMINI_API_KEY
     ```
-    Replace `YOUR_GEMINI_API_KEY` with your actual Google AI Gemini API key. You can obtain one from [Google AI Studio](https://aistudio.google.com/app/apikey).
+    Replace `YOUR_GEMINI_API_KEY` with your actual Gemini API key from your Google account.
 
 4.  **Run the Development Server:**
     Once the dependencies are installed and the environment variable is set, you can start the Next.js development server:

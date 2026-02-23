@@ -15,10 +15,10 @@ export default {
         "2xl": "1400px",
       },
     },
-    extend: {
+      extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['"Space Grotesk"', 'sans-serif'],
+        body: ['"Source Sans 3"', 'sans-serif'],
+        headline: ['Oswald', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

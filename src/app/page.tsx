@@ -1,41 +1,41 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Search, FilePlus, Users } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Shield, Trash2, Users, FileText, Search, ClipboardCheck } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { RailMadadHeader } from '@/components/layout/rail-madad-header';
 
-const AppLogo = () => (
-  <div className="flex items-center gap-2">
-      <div className="bg-accent p-1.5 rounded-md leading-none">
-          <span className="font-bold text-accent-foreground text-lg">RS</span>
-      </div>
-      <h1 className="font-headline text-2xl font-bold text-inherit">
-          RAILSEVA
-      </h1>
-  </div>
-);
-
-const featureCards = [
+const categoryCards = [
   {
-    icon: FilePlus,
-    title: 'Effortless Submission',
-    description: 'Quickly file complaints or suggestions using our streamlined form.',
+    icon: Trash2,
+    title: 'CLEANLINESS',
+    description: 'Report coach cleaning, washroom maintenance, and station hygiene issues.',
   },
   {
-    icon: Mic,
-    title: 'Voice-to-Text AI',
-    description: 'Use your voice to describe your issue, and our AI will transcribe it for you.',
-  },
-  {
-    icon: Search,
-    title: 'Real-Time Tracking',
-    description: 'Track the status of your submitted grievances with a unique complaint ID.',
+    icon: Shield,
+    title: 'SECURITY',
+    description: 'Report safety concerns, suspicious activity, and emergency incidents.',
   },
   {
     icon: Users,
-    title: 'Dedicated Admin Panel',
-    description: 'An internal portal for railway authorities to manage and resolve complaints efficiently.',
+    title: 'STAFF BEHAVIOR',
+    description: 'Report misconduct, service quality concerns, or unprofessional behavior.',
+  },
+  {
+    icon: FileText,
+    title: 'FOOD QUALITY',
+    description: 'Raise complaints related to catering quality and pantry service.',
+  },
+  {
+    icon: Search,
+    title: 'TRAIN DELAY',
+    description: 'Submit delay and schedule disruption complaints with journey context.',
+  },
+  {
+    icon: ClipboardCheck,
+    title: 'OTHER ISSUES',
+    description: 'Submit any other railway issue with image, audio, or video evidence.',
   },
 ];
 
@@ -43,25 +43,10 @@ export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'landing-hero');
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="text-primary">
-            <AppLogo />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/login">Register</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background">
+      <RailMadadHeader />
       <main className="flex-1">
-        <section className="relative text-primary-foreground">
+        <section className="relative overflow-hidden text-primary-foreground">
           <div className="absolute inset-0">
             {heroImage && (
                 <Image
@@ -72,57 +57,82 @@ export default function LandingPage() {
                   priority
                 />
             )}
-            <div className="absolute inset-0 bg-primary/80 mix-blend-multiply" />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/70 via-primary/90 to-background" />
-
+            <div className="absolute inset-0 bg-[#163f97]/85" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#163f97]/75 via-[#163f97]/90 to-[#e8edf7]" />
           </div>
 
-          <div className="container relative grid lg:grid-cols-2 gap-12 items-center py-24 md:py-32">
-            <div className="flex flex-col gap-6">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-headline font-bold">
-                RAILSEVA
+          <div className="container relative py-16 md:py-24">
+            <div className="max-w-4xl space-y-8">
+              <h1 className="font-headline text-6xl font-bold uppercase tracking-tight md:text-8xl">
+                RAIL MADAD
               </h1>
-              <p className="text-lg text-primary-foreground/90 max-w-lg">
-                Your Voice Matters. Report railway complaints instantly. A dedicated platform for Indian Railway passengers to voice their concerns and contribute to service improvement.
+              <p className="max-w-4xl text-3xl leading-tight text-white/90 md:text-5xl">
+                Your Voice Matters. Report railway complaints instantly with text, images, audio, and video evidence.
               </p>
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Button asChild className="h-14 rounded-lg px-9 font-headline text-2xl uppercase tracking-wide">
+                  <Link href="/login">Get Started</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-14 rounded-lg border-white bg-transparent px-9 font-headline text-2xl uppercase tracking-wide text-white hover:bg-white hover:text-accent"
+                >
+                  <Link href="/login">Login</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-background py-16 md:py-24">
+        <section className="bg-background py-20">
           <div className="container">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-headline font-bold">A PLATFORM FOR CHANGE</h2>
-              <p className="text-lg text-muted-foreground mt-2">File, track, and resolve your railway grievances with ease.</p>
+            <div className="mb-12 text-center">
+              <h2 className="font-headline text-6xl font-bold uppercase text-foreground md:text-7xl">Complaint Categories</h2>
+              <p className="mt-3 text-2xl text-muted-foreground">Report issues across multiple railway service areas</p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featureCards.map((feature, index) => (
-                <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="mx-auto bg-primary/10 text-primary p-3 rounded-full w-fit">
-                      <feature.icon className="h-8 w-8" />
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {categoryCards.map((item) => (
+                <Card key={item.title} className="rounded-2xl border bg-white shadow-sm">
+                  <CardContent className="space-y-6 p-8">
+                    <div className="inline-flex rounded-xl bg-[#edf2fc] p-4 text-accent">
+                      <item.icon className="h-8 w-8" />
                     </div>
-                    <CardTitle className="pt-4">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                    <h3 className="font-headline text-4xl font-semibold uppercase text-foreground">{item.title}</h3>
+                    <p className="text-xl leading-relaxed text-muted-foreground">{item.description}</p>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
         </section>
-      </main>
-
-      <footer className="border-t bg-muted/50">
-        <div className="container flex flex-col md:flex-row items-center justify-between py-6 gap-4">
-          <div className="text-primary">
-            <AppLogo />
+        
+        <section className="bg-muted py-20">
+          <div className="container">
+            <div className="mb-12 text-center">
+              <h2 className="font-headline text-6xl font-bold uppercase text-foreground md:text-7xl">How It Works</h2>
+              <p className="mt-3 text-2xl text-muted-foreground">Simple 3-step process to file your complaint</p>
+            </div>
+            <div className="grid gap-10 md:grid-cols-3">
+              {[
+                { step: "1", title: "Register", text: "Create your account with basic details. Quick and secure registration process." },
+                { step: "2", title: "Submit Complaint", text: "Describe your issue with text, images, audio, or video evidence for faster resolution." },
+                { step: "3", title: "Track Status", text: "Monitor your complaint status in real-time and receive regular updates." },
+              ].map((item, index) => (
+                <div key={item.title} className="text-center">
+                  <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full text-6xl font-bold text-white ${index === 1 ? "bg-primary" : "bg-accent"}`}>
+                    {item.step}
+                  </div>
+                  <h3 className="font-headline text-4xl font-semibold uppercase text-foreground">{item.title}</h3>
+                  <p className="mx-auto mt-3 max-w-sm text-xl leading-relaxed text-muted-foreground">{item.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} RailSeva by Prithvi. All rights reserved.
-          </p>
-        </div>
+        </section>
+      </main>
+      <footer className="bg-accent py-6 text-center text-base text-white/90">
+        <div className="container">&copy; {new Date().getFullYear()} Rail Madad. All rights reserved.</div>
       </footer>
     </div>
   );

@@ -23,15 +23,13 @@ export default function TrackComplaintPage() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <h1 className="text-3xl font-headline font-bold mb-2">Track Complaint Status</h1>
-      <p className="text-muted-foreground mb-8">
-        Enter your complaint ID to view its current status and history.
-      </p>
+    <div className="mx-auto w-full max-w-5xl">
+      <h1 className="mb-2 font-headline text-6xl font-semibold uppercase text-foreground">My Complaints</h1>
+      <p className="mb-8 text-2xl text-muted-foreground">Enter your complaint ID to view status updates and history.</p>
 
-      <Card className="mb-8">
+      <Card className="mb-8 rounded-2xl border bg-white shadow-sm">
         <CardHeader>
-          <CardTitle>Search Complaint</CardTitle>
+          <CardTitle className="font-headline text-4xl uppercase">Track Complaint</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-4">
@@ -39,9 +37,9 @@ export default function TrackComplaintPage() {
               placeholder="Enter Complaint ID (e.g., RAIL12345)"
               value={complaintId}
               onChange={(e) => setComplaintId(e.target.value)}
-              className="flex-grow"
+              className="h-12 flex-grow text-lg"
             />
-            <Button type="submit" className="w-full sm:w-auto">
+            <Button type="submit" className="h-12 w-full font-headline text-xl uppercase sm:w-auto">
               <Search className="mr-2 h-4 w-4" />
               Track
             </Button>
